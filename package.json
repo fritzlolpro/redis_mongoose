@@ -1,0 +1,31 @@
+{
+  "name": "redis_mongoose",
+  "version": "1.0.0",
+  "description": "Solution for easy caching Mongoose queries with Redis",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fedor Sorokin <livsant123@gmail.com>",
+  "license": "MIT",
+  "keywords": [
+    "redis",
+    "cache",
+    "cached",
+    "caching",
+    "performance",
+    "mongodb cache",
+    "mongodb",
+    "redis mongoose",
+    "redis mongodb",
+    "redis mongo",
+    "mongoose cache",
+    "mongodb cache",
+    "mongoose redis",
+    "mongoose",
+    "redis cache",
+    "mongo cache",
+    "node cache",
+    "nosql"
+  ]
+}
