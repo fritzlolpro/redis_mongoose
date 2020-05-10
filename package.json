@@ -2,7 +2,7 @@
   "name": "redis_mongoose",
   "version": "1.0.0",
   "description": "Solution for easy caching Mongoose queries with Redis",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -27,5 +27,9 @@
     "mongo cache",
     "node cache",
     "nosql"
-  ]
+  ],
+  "dependencies": {
+    "mongoose": "^5.9.13",
+    "redis": "^3.0.2"
+  }
 }
