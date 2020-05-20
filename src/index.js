@@ -1,58 +1,108 @@
-const mongoose = require('mongoose');
+/* eslint-disable prefer-rest-params */
+/* eslint-disable new-cap */
+/* eslint-disable no-param-reassign */
+/* eslint-disable func-names */
 const redis = require('redis');
 const { promisify } = require('util');
 const crypto = require('crypto');
 
-const { exec } = mongoose.Query.prototype;
-
-const redisUrl = 'redis://127.0.0.1:6379';
-const client = redis.createClient(redisUrl);
-client.hget = promisify(client.hget);
-
-// eslint-disable-next-line func-names
-mongoose.Query.prototype.cache = function (options = {}) {
-    this.useCache = true;
-
-    this.cacheGroupKey = JSON.stringify(options.cacheGroup || 'default');
-    this.cacheKey = options.key ? JSON.stringify(options.key) : null;
-    this.ttl = options.ttl ? options.ttl : null;
-
-    return this;
-};
-
-// eslint-disable-next-line func-names
-mongoose.Query.prototype.exec = async function () {
-    if (!this.useCache) {
-        const result = await exec.apply(this, arguments);
-        return result;
-    }
-
-    const key = JSON.stringify({ ...this.getQuery(), collection: this.mongooseCollection.name });
-
-    // see if have val for key in redis and if ye than return it
-    const cacheValue = await client.hget(this.cacheKey, key);
-    // if no, punch mongo and return it and store things in redis
-    if (cacheValue) {
-        // const doc = new this.model(JSON.parse(cacheValue));
-
-        const doc = JSON.parse(cacheValue);
-        console.log('GONNA from cache');
-        return Array.isArray(doc)
-            ? doc.map((d) => this.model(d))
-            : new this.model(doc);
-    }
-    console.log('GONNA from DB');
-    const result = await exec.apply(this, arguments);
-
-    // client.hmset(this.cacheKey, key, JSON.stringify(result), 'EX', 10);
-    client.hset(this.cacheKey, key, JSON.stringify(result));
-    console.log('save to DB', this.cacheKey, key);
-    return result;
-};
+let client = null;
 
 module.exports = {
-    clearHash(key) {
-        console.log('clear chach', key);
-        client.del(JSON.stringify(key || 'default'));
+    init(mongoose, redisAdress) {
+        const { exec } = mongoose.Query.prototype;
+        const redisUrl = redisAdress || 'redis://127.0.0.1:6379';
+        client = redis.createClient(redisUrl);
+        client.hget = promisify(client.hget);
+
+        mongoose.Query.prototype.cache = function (options = {
+            customKey: null,
+            cacheGroup: 'default',
+            ttl: null,
+        }) {
+            this.useCache = true;
+            // cacheKey is key for field, can be empty so uniq hash from queryAnd CollectionName will be made
+            /*
+                  *REDIS STORE*
+              |__________|__________|
+              |__________|__________|
+              |_cacheKey_|_{result}_|
+              |__________|__________|
+            */
+
+            // cacheGroupKey allows you to group fieds
+            /*
+                *REDIS STORE*
+
+                |__default__|
+                            |___....___|___....___|
+                            |___....___|___....___|
+                            |_cacheKey_|_{result}_|
+                            |___....___|___....___|
+                |___user1___|
+                            |___....___|___....___|
+                            |__blogs___|_{result}_|
+                            |__tweets__|_{result}_|
+                            |___x40a___|_{result}_|
+
+            */
+
+            // ttl is how long in seconds cache for group will live, vy default it will live forever
+            /*
+                *REDIS STORE*
+                ttl=60
+
+                |__default__| <-- will be deleted after 60 seconds
+                            |___....___|___....___|
+                            |___....___|___....___|
+                            |_cacheKey_|_{result}_|
+                            |___....___|___....___|
+
+            */
+
+
+            this.cacheKey = options.customKey ? JSON.stringify(options.customKey) : null;
+            this.cacheGroupKey = JSON.stringify(options.cacheGroup || 'default');
+            this.ttl = options.ttl;
+
+            return this;
+        };
+
+        mongoose.Query.prototype.exec = async function () {
+            if (!this.useCache) {
+                const result = await exec.apply(this, arguments);
+                return result;
+            }
+
+            const field = this.cacheKey || crypto.createHash('md5').update(JSON.stringify({ ...this.getQuery(), collection: this.mongooseCollection.name })).digest('hex');
+            console.log('HGET', this.cacheGroupKey, field)
+            const cacheValue = await client.hget(this.cacheGroupKey, field);
+            if (cacheValue) {
+                const doc = JSON.parse(cacheValue);
+                console.log('GONNA from cache');
+                return Array.isArray(doc)
+                    ? doc.map((d) => this.model(d))
+                    : new this.model(doc);
+            }
+            console.log('GONNA from DB');
+            const result = await exec.apply(this, arguments);
+
+            console.log('HSET!!', this.cacheGroupKey, field, JSON.stringify(result));
+            client.hset(this.cacheGroupKey, field, JSON.stringify(result));
+
+            if (this.ttl) {
+                client.expire(this.cacheGroupKey, this.ttl);
+            }
+
+            console.log('save to DB', this.cacheGroupKey, field);
+            return result;
+        };
+    },
+
+    clearCache(cacheGroup = 'default') {
+        if (client) {
+            console.log('clearCache', cacheGroup);
+            client.del(JSON.stringify(cacheGroup));
+        }
     },
 };
