@@ -75,33 +75,27 @@ module.exports = {
             }
 
             const field = this.cacheKey || crypto.createHash('md5').update(JSON.stringify({ ...this.getQuery(), collection: this.mongooseCollection.name })).digest('hex');
-            console.log('HGET', this.cacheGroupKey, field)
             const cacheValue = await client.hget(this.cacheGroupKey, field);
             if (cacheValue) {
                 const doc = JSON.parse(cacheValue);
-                console.log('GONNA from cache');
                 return Array.isArray(doc)
                     ? doc.map((d) => this.model(d))
                     : new this.model(doc);
             }
-            console.log('GONNA from DB');
             const result = await exec.apply(this, arguments);
 
-            console.log('HSET!!', this.cacheGroupKey, field, JSON.stringify(result));
             client.hset(this.cacheGroupKey, field, JSON.stringify(result));
 
             if (this.ttl) {
                 client.expire(this.cacheGroupKey, this.ttl);
             }
 
-            console.log('save to DB', this.cacheGroupKey, field);
             return result;
         };
     },
 
     clearCache(cacheGroup = 'default') {
         if (client) {
-            console.log('clearCache', cacheGroup);
             client.del(JSON.stringify(cacheGroup));
         }
     },
