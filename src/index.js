@@ -1,7 +1,3 @@
-/* eslint-disable prefer-rest-params */
-/* eslint-disable new-cap */
-/* eslint-disable no-param-reassign */
-/* eslint-disable func-names */
 const redis = require('redis');
 const { promisify } = require('util');
 const crypto = require('crypto');
