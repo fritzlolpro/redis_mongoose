@@ -108,3 +108,8 @@ There are some options to help you fine-tune your caching strategy
                           |_cacheKey_|_{result}_|
                           |___....___|___....___|
 
+# STAR and Contribute!
+Visit my github, give me a star!
+<https://github.com/fritzlolpro/redis_mongoose>
+
+Also if u have any questions or proporsals -- you know what to do!
