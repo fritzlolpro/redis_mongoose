@@ -17,46 +17,6 @@ module.exports = {
             ttl: null,
         }) {
             this.useCache = true;
-            // cacheKey is key for field, can be empty so uniq hash from queryAnd CollectionName will be made
-            /*
-                  *REDIS STORE*
-              |__________|__________|
-              |__________|__________|
-              |_cacheKey_|_{result}_|
-              |__________|__________|
-            */
-
-            // cacheGroupKey allows you to group fieds
-            /*
-                *REDIS STORE*
-
-                |__default__|
-                            |___....___|___....___|
-                            |___....___|___....___|
-                            |_cacheKey_|_{result}_|
-                            |___....___|___....___|
-                |___user1___|
-                            |___....___|___....___|
-                            |__blogs___|_{result}_|
-                            |__tweets__|_{result}_|
-                            |___x40a___|_{result}_|
-
-            */
-
-            // ttl is how long in seconds cache for group will live, vy default it will live forever
-            /*
-                *REDIS STORE*
-                ttl=60
-
-                |__default__| <-- will be deleted after 60 seconds
-                            |___....___|___....___|
-                            |___....___|___....___|
-                            |_cacheKey_|_{result}_|
-                            |___....___|___....___|
-
-            */
-
-
             this.cacheKey = options.customKey ? JSON.stringify(options.customKey) : null;
             this.cacheGroupKey = JSON.stringify(options.cacheGroup || 'default');
             this.ttl = options.ttl;
