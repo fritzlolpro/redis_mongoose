@@ -64,7 +64,7 @@ app.post('/api/blogs', async (req, res) => {
 
 ```
 
-## Options
+# Options
 There are some options to help you fine-tune your caching strategy
 
 ```
